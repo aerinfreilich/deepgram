@@ -1,10 +1,24 @@
 import request from "supertest";
-import app from "../src/index";
+import app, { server } from "../src/index"; // Adjust the import path to your Express app
 
-describe("GET /", () => {
-  it("should return Hello World!", async () => {
-    const res = await request(app).get("/");
-    expect(res.status).toBe(200);
-    expect(res.text).toBe("Hello World!");
+describe("POST /upload", () => {
+  afterAll((done) => {
+    server.close(done);
+  });
+
+  it("should upload a file successfully", async () => {
+    const response = await request(app)
+      .post("/upload")
+      .attach("audio", "test1.wav");
+
+    expect(response.status).toBe(200);
+    expect(response.text).toBe("File uploaded successfully");
+  });
+
+  it("should return an error if no file is uploaded", async () => {
+    const response = await request(app).post("/upload");
+
+    expect(response.status).toBe(400);
+    expect(response.text).toBe("No file uploaded.");
   });
 });
