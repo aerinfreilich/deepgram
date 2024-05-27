@@ -3,40 +3,39 @@ import { ParsedQs } from "qs";
 
 export function getFileFilterFromQuery(query: ParsedQs) {
   return async (file: string) => {
-    try {
-      const metadata = await getMetadataFromFile(file);
-      const durationInSeconds = metadata.durationInSeconds;
+    const metadata = await getMetadataFromFile(file);
+    const durationInSeconds = metadata.durationInSeconds;
 
-      if (
-        typeof query.maxduration !== "string" ||
-        typeof query.minduration !== "string"
-      ) {
-        throw new Error("Query parameters are malformed");
+    const notRejected = Object.keys(query).every((key) => {
+      if (key === "maxduration") {
+        if (typeof query.maxduration != "string") {
+          // if this query is malformed, reject everything
+          return false;
+        }
+        if (
+          durationInSeconds &&
+          durationInSeconds > parseInt(query.maxduration)
+        ) {
+          // this is where we reject files based on having length above the max duration
+          return false;
+        }
       }
-
-      const maxDuration = parseInt(query.maxduration);
-      const minDuration = parseInt(query.minduration);
-
-      if (
-        !isNaN(maxDuration) &&
-        durationInSeconds &&
-        durationInSeconds > maxDuration
-      ) {
-        return false;
+      if (key === "minduration") {
+        if (typeof query.minduration != "string") {
+          // if this query is malformed, reject everything
+          return false;
+        }
+        if (
+          durationInSeconds &&
+          durationInSeconds < parseInt(query.minduration)
+        ) {
+          // this is where we reject files based on having length below the min duration
+          return false;
+        }
       }
-
-      if (
-        !isNaN(minDuration) &&
-        durationInSeconds &&
-        durationInSeconds < minDuration
-      ) {
-        return false;
-      }
-
       return true;
-    } catch (error) {
-      console.error("Error filtering file:", error);
-      return false;
-    }
+    });
+
+    return notRejected;
   };
 }

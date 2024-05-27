@@ -93,4 +93,28 @@ describe("POST /upload", () => {
     expect(filesLessThan60).toContain("PinkPanther30.wav");
     expect(filesLessThan60).toContain("PinkPanther60.wav");
   });
+
+  it("should jointly filter based on maxduration and minduration", async () => {
+    await request(app)
+      .post("/upload")
+      .attach("audio", path.join(__dirname, "testFiles", "CantinaBand3.wav"));
+
+    await request(app)
+      .post("/upload")
+      .attach("audio", path.join(__dirname, "testFiles", "PinkPanther30.wav"));
+
+    await request(app)
+      .post("/upload")
+      .attach("audio", path.join(__dirname, "testFiles", "PinkPanther60.wav"));
+
+    const filesExactly30Response = await request(app).get(
+      "/files?maxduration=30&minduration=30"
+    );
+
+    const filesExactly30 = filesExactly30Response.body.files;
+
+    expect(filesExactly30).toContain("PinkPanther30.wav");
+    expect(filesExactly30).not.toContain("PinkPanther60.wav");
+    expect(filesExactly30).not.toContain("CantinaBand3.wav");
+  });
 });
