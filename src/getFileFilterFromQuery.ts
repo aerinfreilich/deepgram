@@ -7,6 +7,16 @@ export function getFileFilterFromQuery(query: ParsedQs) {
     const durationInSeconds = metadata.durationInSeconds;
 
     const notRejected = Object.keys(query).every((key) => {
+      if (key === "name") {
+        if (typeof query.name != "string") {
+          // if this query is malformed, reject everything
+          return false;
+        }
+        if (query.name !== file) {
+          // if the file has the wrong name, reject
+          return false;
+        }
+      }
       if (key === "maxduration") {
         if (typeof query.maxduration != "string") {
           // if this query is malformed, reject everything
