@@ -4,6 +4,7 @@ import path from "path";
 import fs from "fs";
 import getMetadataFromFile from "./getMetadataFromFile";
 import { getFileFilterFromQuery } from "./getFileFilterFromQuery";
+import { deleteFile } from "./deleteFile";
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -90,6 +91,43 @@ app.get("/download/:filename", (req: Request, res: Response) => {
   } catch (error) {
     console.error("Error downloading file:", error);
     res.status(500).send("Error downloading file");
+  }
+});
+
+// DELETE endpoint to delete a specific file
+app.delete("/files/:filename", async (req: Request, res: Response) => {
+  const filename = req.params.filename;
+  const filePath = path.join(__dirname, "../uploads", filename);
+
+  try {
+    await deleteFile(filePath);
+    res.json({ message: `File ${filename} deleted successfully` });
+  } catch (error) {
+    console.error("Error deleting file:", error);
+    res.status(500).send("Error deleting file");
+  }
+});
+
+// DELETE endpoint to delete all files
+app.delete("/files", async (req: Request, res: Response) => {
+  const directoryPath = path.join(__dirname, "../uploads");
+
+  try {
+    // Read the contents of the directory
+    const files = await fs.promises.readdir(directoryPath);
+
+    // Delete each file in the directory
+    await Promise.all(
+      files.map(async (filename) => {
+        const filePath = path.join(directoryPath, filename);
+        await deleteFile(filePath);
+      })
+    );
+
+    res.json({ message: "All files deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting files:", error);
+    res.status(500).send("Error deleting files");
   }
 });
 

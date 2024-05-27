@@ -3,6 +3,10 @@ const path = require("path");
 import app, { server } from "../src/index";
 
 describe("POST /upload", () => {
+  afterEach(async () => {
+    await request(app).delete("/files");
+  });
+
   afterAll((done) => {
     server.close(done);
   });
