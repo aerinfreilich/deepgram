@@ -95,7 +95,7 @@ app.get("/download/:filename", (req: Request, res: Response) => {
 });
 
 // DELETE endpoint to delete a specific file
-app.delete("/files/:filename", async (req: Request, res: Response) => {
+app.delete("/file/:filename", async (req: Request, res: Response) => {
   const filename = req.params.filename;
   const filePath = path.join(__dirname, "../uploads", filename);
 
