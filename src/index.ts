@@ -2,6 +2,7 @@ import express, { Request, Response } from "express";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+const WaveFile = require("wavefile").WaveFile;
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -16,7 +17,7 @@ const upload = multer({ storage: storage });
 
 const app = express();
 
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 // POST endpoint for file upload
 app.post("/upload", upload.single("audio"), (req: Request, res: Response) => {
@@ -39,22 +40,48 @@ app.get("/files", (req: Request, res: Response) => {
     }
 
     // TODO: apply filtering logic here using req.query
-
-    console.log({ files });
     res.json({ files });
   });
 });
 
 app.get("/metadata/:filename", (req: Request, res: Response) => {
   // gets metadata for a specified file, accepts filters in query parameters
-  const query = req.query;
-  console.log({ query });
-  return res.status(500).send("Endpoint not yet implemented");
+  const filename = req.params.filename;
+  const filePath = path.join(__dirname, "../uploads", filename);
+
+  fs.readFile(filePath, (err, data) => {
+    if (err) {
+      console.error("Error reading file", err);
+      return res.status(500).send("Error reading file");
+    }
+
+    try {
+      const file = new WaveFile(data);
+
+      const metadata = {
+        durationInSeconds: file.duration,
+        sampleRate: file.fmt.sampleRate,
+        bitDepth: file.bitDepth,
+        numChannels: file.fmt.numChannels,
+        audioFormat: file.fmt.audioFormat,
+        dataSize: file.data.chunkSize,
+        byteRate: file.fmt.byteRate,
+        blockAlign: file.fmt.blockAlign,
+        compressionCode: file.fmt.compressionCode,
+        cuePoints: file.cue.chunkSize,
+      };
+
+      return res.json({ metadata });
+    } catch (error) {
+      console.error("Error parsing WAV file", error);
+      return res.status(500).send("Error parsing WAV file");
+    }
+  });
 });
 
 app.get("/download/:filename", (req: Request, res: Response) => {
   const filename = req.params.filename;
-  const filePath = path.join(__dirname, "uploads", filename);
+  const filePath = path.join(__dirname, "../uploads", filename);
 
   res.download(filePath, filename, (err) => {
     if (err) {

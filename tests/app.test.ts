@@ -39,4 +39,25 @@ describe("POST /upload", () => {
     expect(response.body.files).toContain("test1.wav");
     expect(response.body.files).toContain("test2.wav");
   });
+
+  it("should return metadata of uploaded files", async () => {
+    const response = await request(app)
+      .post("/upload")
+      .attach("audio", "test1.wav");
+
+    expect(response.status).toBe(200);
+
+    const metadataResponse = await request(app).get("/metadata/test1.wav");
+    const metadata = metadataResponse.body.metadata;
+    expect(metadata).toStrictEqual({
+      sampleRate: 22050,
+      bitDepth: "16",
+      numChannels: 1,
+      audioFormat: 1,
+      dataSize: 132300,
+      byteRate: 44100,
+      blockAlign: 2,
+      cuePoints: 0,
+    });
+  });
 });
