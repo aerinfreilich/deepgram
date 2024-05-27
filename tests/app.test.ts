@@ -43,15 +43,17 @@ describe("POST /upload", () => {
   it("should return metadata of uploaded files", async () => {
     const response = await request(app)
       .post("/upload")
-      .attach("audio", "test1.wav");
+      .attach("audio", path.join(__dirname, "testFiles", "test1.wav"));
 
     expect(response.status).toBe(200);
 
     const metadataResponse = await request(app).get("/metadata/test1.wav");
     const metadata = metadataResponse.body.metadata;
+
     expect(metadata).toStrictEqual({
+      durationInSeconds: 3,
       sampleRate: 22050,
-      bitDepth: "16",
+      bitDepth: "16", // TODO: investigate why this is a string
       numChannels: 1,
       audioFormat: 1,
       dataSize: 132300,
@@ -59,5 +61,36 @@ describe("POST /upload", () => {
       blockAlign: 2,
       cuePoints: 0,
     });
+  });
+
+  it("should filter based on maxduration", async () => {
+    await request(app)
+      .post("/upload")
+      .attach("audio", path.join(__dirname, "testFiles", "PinkPanther30.wav"));
+
+    await request(app)
+      .post("/upload")
+      .attach("audio", path.join(__dirname, "testFiles", "PinkPanther60.wav"));
+
+    const filterMaxDuration29Response = await request(app).get(
+      "/files?maxduration=29"
+    );
+    const filterMaxDuration30Response = await request(app).get(
+      "/files?maxduration=30"
+    );
+    const filterMaxDuration60Response = await request(app).get(
+      "/files?maxduration=60"
+    );
+
+    const filesLessThan29 = filterMaxDuration29Response.body.files;
+    const filesLessThan30 = filterMaxDuration30Response.body.files;
+    const filesLessThan60 = filterMaxDuration60Response.body.files;
+
+    expect(filesLessThan29).not.toContain("PinkPanther30.wav");
+    expect(filesLessThan29).not.toContain("PinkPanther60.wav");
+    expect(filesLessThan30).toContain("PinkPanther30.wav");
+    expect(filesLessThan30).not.toContain("PinkPanther60.wav");
+    expect(filesLessThan60).toContain("PinkPanther30.wav");
+    expect(filesLessThan60).toContain("PinkPanther60.wav");
   });
 });
